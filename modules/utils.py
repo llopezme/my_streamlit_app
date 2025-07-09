@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 
-def display_item_characteristics(selected_item: str, df_caracteristicas: pd.DataFrame, 
+def display_item_characteristics(selected_item: str, df_caracteristicas: pd.DataFrame,
                                  df_inventario: pd.DataFrame, df_display: pd.DataFrame,
                                  mean_without_outliers_abs: float, upper_bound_outlier_abs: float):
     """
@@ -16,11 +16,16 @@ def display_item_characteristics(selected_item: str, df_caracteristicas: pd.Data
 
     total_salidas_item = df_display['Salidas'].abs().sum()
 
+    # Calculate the initial balance (CurrentStock + StockSeguridad) for display
+    initial_balance_for_display = 0
+    if not item_inventario_row.empty:
+        initial_balance_for_display = item_inventario_row['CurrentStock'].iloc[0] + item_inventario_row['StockSeguridad'].iloc[0]
+
     if not item_caracteristicas_row.empty and not item_inventario_row.empty:
         carac_data = {
             "Métrica": [
                 "Item", "Site", "Descripción", "ADI", "CV", "Método", "ABC Class",
-                "Lead Time", "Stock de seguridad", "Salidas de Inventario",
+                "Lead Time", "Stock de seguridad", "Saldo Inicial", "Salidas de Inventario",
                 "Media sin Outliers (Salidas)",
                 "Límite Superior Outlier (Salidas)"
             ],
@@ -33,7 +38,8 @@ def display_item_characteristics(selected_item: str, df_caracteristicas: pd.Data
                 item_caracteristicas_row['Metodo'].iloc[0],
                 item_caracteristicas_row['ABC Class'].iloc[0],
                 item_inventario_row['LeadTime'].iloc[0],
-                item_inventario_row['StockSeguridad'].iloc[0], # Columna renombrada a 'StockSeguridad'
+                item_inventario_row['StockSeguridad'].iloc[0],
+                initial_balance_for_display, # Display the calculated initial balance
                 total_salidas_item,
                 f"{mean_without_outliers_abs:.2f}",
                 f"{upper_bound_outlier_abs:.2f}"
@@ -46,25 +52,34 @@ def display_item_characteristics(selected_item: str, df_caracteristicas: pd.Data
 
 def display_movement_charts(selected_item: str, df_display: pd.DataFrame):
     """
-    Muestra el gráfico de entradas y salidas en Streamlit.
+    Muestra el gráfico de entradas y salidas, y el saldo en Streamlit.
     """
-    st.subheader("Gráfico de Entradas y Salidas:")
+    st.subheader("Gráfico de Entradas, Salidas y Saldo:")
     fig = go.Figure()
 
+    # Add Entradas as Bar
     fig.add_trace(go.Bar(
         x=df_display['Fecha'], y=df_display['Entradas'], name='Entradas',
         marker_color='rgb(49,130,189)',
         hovertemplate='Fecha: %{x|%Y-%m-%d}<br>Entradas: %{y}<extra></extra>'
     ))
 
+    # Add Salidas as Bar
     fig.add_trace(go.Bar(
         x=df_display['Fecha'], y=df_display['Salidas'], name='Salidas',
         marker_color='rgb(204,0,0)',
         hovertemplate='Fecha: %{x|%Y-%m-%d}<br>Salidas: %{y}<extra></extra>'
     ))
 
+    # Add Saldo as Line
+    fig.add_trace(go.Scatter(
+        x=df_display['Fecha'], y=df_display['Saldo'], mode='lines', name='Saldo',
+        line=dict(color='rgb(0,128,0)', width=2), # Green line for balance
+        hovertemplate='Fecha: %{x|%Y-%m-%d}<br>Saldo: %{y}<extra></extra>'
+    ))
+
     fig.update_layout(
-        title=f'Entradas y Salidas de "{selected_item}" a lo largo del tiempo',
+        title=f'Movimientos y Saldo de "{selected_item}" a lo largo del tiempo',
         xaxis_title="Fecha", yaxis_title="Cantidad (Unidades)",
         legend_title="Leyenda", hovermode="x unified", barmode='relative'
     )
@@ -85,4 +100,6 @@ def display_movement_details(df_display: pd.DataFrame):
     Muestra la tabla de detalle de movimientos en Streamlit.
     """
     st.subheader("Detalle de Movimientos:")
-    st.dataframe(df_display[['Fecha', 'Entradas', 'Salidas', 'Site']].sort_values(by='Fecha').set_index('Fecha'))
+    # Include 'Saldo' in the displayed dataframe
+    st.dataframe(df_display[['Fecha', 'Entradas', 'Salidas', 'Movimientos', 'Saldo', 'Site']].sort_values(by='Fecha').set_index('Fecha'))
+
