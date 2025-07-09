@@ -42,7 +42,7 @@ with st.sidebar:
         # Cargar la imagen del logo
         logo = Image.open(LOGO_PATH)
         # Mostrar el logo en la barra lateral, ajustando el ancho para que sea más grande
-        st.image(logo, width=400) # Se ha aumentado el ancho a 200 (puedes ajustarlo más si es necesario)
+        st.image(logo, width=400) # Se ha aumentado el ancho a 400
         # Mostrar la nota con texto más pequeño
         st.markdown("<p style='font-size: small; text-align: center;'>Un producto de Management Consultants de Guatemala</p>", unsafe_allow_html=True)
     except FileNotFoundError:
@@ -63,6 +63,15 @@ try:
     df_caracteristicas = load_characteristics_data(CARACTERISTICAS_PATH)
     df_movimientos = load_consumption_data(CONSUMOS_PATH)
     st.success("Todos los archivos cargados exitosamente.")
+
+    # --- DEBUG: Mostrar columnas de DataFrames antes de process_movements ---
+    st.write("--- DEBUG: DataFrames antes de process_movements ---")
+    st.write("Columnas de df_inventario:", df_inventario.columns.tolist())
+    st.write("df_inventario está vacío:", df_inventario.empty)
+    st.write("Columnas de df_movimientos:", df_movimientos.columns.tolist())
+    st.write("df_movimientos está vacío:", df_movimientos.empty)
+    st.write("--------------------------------------------------")
+    # --- FIN DEBUG ---
     
     # --- Procesamiento de movimientos ---
     st.subheader("Procesando movimientos y calculando saldo...")
@@ -122,7 +131,7 @@ except ValueError as e:
     st.error(f"Error en el formato de los archivos Excel: {e}")
     st.info(f"""Revisa los nombres de las columnas en tus archivos Excel:
     - '{CONSUMOS_FILE_NAME}': 'Item', 'Site', 'Fecha', 'Movimientos'.
-    - '{INVENTARIO_FILE_NAME}': 'Item', 'CurrentStock', 'LeadTime', 'StockSeguridad'.
+    - '{INVENTARIO_FILE_NAME}': 'Item', 'CurrentStock', 'LeadTime', 'StockSeguridad', 'Site'.
     - '{CARACTERISTICAS_FILE_NAME}': 'Item', 'Site', 'Descripcion', 'ADI', 'CV', 'Metodo', 'ABC Class'.""")
 except Exception as e:
     st.error(f"Ocurrió un error inesperado: {e}. Esto podría deberse a un problema con los datos en tus archivos Excel que no se ajustan al tipo esperado.")
