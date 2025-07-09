@@ -180,7 +180,8 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
             st.dataframe(item_movements.head(3))
         # --- FIN DEBUG ---
         try:
-            daily_movements_agg = item_movements.groupby(['Fecha', 'Site']).agg(
+            # CORRECCIÓN CLAVE: Incluir 'Item' en la agrupación para que esté presente en daily_movements_agg
+            daily_movements_agg = item_movements.groupby(['Fecha', 'Site', 'Item']).agg(
                 Movimientos=('Movimientos', 'sum'),
                 Entradas=('Entradas', 'sum'),
                 Salidas=('Salidas', 'sum')
