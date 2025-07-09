@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
+from PIL import Image # Importar la librería Pillow para manejar imágenes
 
 # Importar funciones de tus módulos
 from modules.data_loader import load_inventory_data, load_consumption_data, load_characteristics_data
@@ -10,24 +11,30 @@ from modules.outlier_detection import calculate_outliers_and_mean_without_outlie
 from modules.utils import display_item_characteristics, display_movement_charts, display_movement_details
 
 # --- Configuración de rutas de archivos (RELATIVAS) ---
-BASE_PATH = os.path.dirname(__file__)  # Ruta del directorio actual (donde está app.py)
-DATA_FOLDER = os.path.join(BASE_PATH, "data")  # Carpeta 'data' dentro del proyecto
+BASE_PATH = os.path.dirname(__file__) # Ruta del directorio actual (donde está app.py)
+DATA_FOLDER = os.path.join(BASE_PATH, "data") # Carpeta 'data' dentro del proyecto
+ASSETS_FOLDER = os.path.join(BASE_PATH, "assets") # Carpeta 'assets' dentro del proyecto
 
-# Nombres de archivos
+# Nombres de archivos de datos
 CONSUMOS_FILE_NAME = "consumos.xlsx"
 INVENTARIO_FILE_NAME = "inventario.xlsx"
 CARACTERISTICAS_FILE_NAME = "caracteristicas.xlsx"
+
+# Nombre del archivo del logo
+LOGO_FILE_NAME = "logo.png" # ¡Asegúrate de que este sea el nombre correcto de tu archivo de logo!
 
 # Rutas completas a los archivos (válidas en cualquier entorno)
 CONSUMOS_PATH = os.path.join(DATA_FOLDER, CONSUMOS_FILE_NAME)
 INVENTARIO_PATH = os.path.join(DATA_FOLDER, INVENTARIO_FILE_NAME)
 CARACTERISTICAS_PATH = os.path.join(DATA_FOLDER, CARACTERISTICAS_FILE_NAME)
+LOGO_PATH = os.path.join(ASSETS_FOLDER, LOGO_FILE_NAME)
 
 # Verifica que los archivos existan (para debug)
 st.write("Rutas de archivos:")
 st.write(f"Consumos: {CONSUMOS_PATH}")
 st.write(f"Inventario: {INVENTARIO_PATH}")
 st.write(f"Características: {CARACTERISTICAS_PATH}")
+st.write(f"Logo: {LOGO_PATH}") # Mostrar la ruta del logo
 
 # Fechas clave para la simulación y visualización
 INITIAL_BALANCE_DATE = datetime(2022, 12, 31)
@@ -35,6 +42,17 @@ START_PLOT_DATE = datetime(2023, 1, 1)
 
 # Configuración de la página de Streamlit
 st.set_page_config(page_title="Análisis de Movimientos de Inventario", layout="wide")
+
+# --- Mostrar el Logo ---
+try:
+    # Cargar la imagen del logo
+    logo = Image.open(LOGO_PATH)
+    # Mostrar el logo en la parte superior de la aplicación
+    st.image(logo, width=150) # Puedes ajustar el ancho según necesites
+except FileNotFoundError:
+    st.warning(f"Advertencia: El archivo del logo no se encontró en la ruta: {LOGO_PATH}")
+except Exception as e:
+    st.error(f"Error al cargar el logo: {e}")
 
 st.title("Análisis de Entradas y Salidas de Inventario por Ítem")
 st.write("""
@@ -45,7 +63,7 @@ para cada ítem, con un saldo inicial y mostrando los datos a partir del **01 de
 try:
     # --- Carga de datos ---
     st.subheader("Cargando datos...")
-    df_inventario = load_inventory_data(INVENTARIO_PATH)  # Pasa la ruta CORRECTA (DATA_FOLDER)
+    df_inventario = load_inventory_data(INVENTARIO_PATH)
     df_caracteristicas = load_characteristics_data(CARACTERISTICAS_PATH)
     df_movimientos = load_consumption_data(CONSUMOS_PATH)
     st.success("Todos los archivos cargados exitosamente.")
@@ -113,7 +131,7 @@ try:
 
 except FileNotFoundError as e:
     st.error(f"Error: Uno de los archivos Excel no se encontró. {e}")
-    st.info(f"Asegúrate de que '{INVENTARIO_FILE_NAME}', '{CONSUMOS_FILE_NAME}' y '{CARACTERISTICAS_FILE_NAME}' estén en: `{BASE_PATH}`")
+    st.info(f"Asegúrate de que '{INVENTARIO_FILE_NAME}', '{CONSUMOS_FILE_NAME}' y '{CARACTERISTICAS_FILE_NAME}' estén en: `{DATA_FOLDER}`")
 except ValueError as e:
     st.error(f"Error en el formato de los archivos Excel: {e}")
     st.info(f"""Revisa los nombres de las columnas en tus archivos Excel:
