@@ -42,7 +42,7 @@ with st.sidebar:
         # Cargar la imagen del logo
         logo = Image.open(LOGO_PATH)
         # Mostrar el logo en la barra lateral, ajustando el ancho para que sea más grande
-        st.image(logo, width=400) # Se ha aumentado el ancho a 200 (puedes ajustarlo más si es necesario)
+        st.image(logo, width=200) # Se ha aumentado el ancho a 200 (puedes ajustarlo más si es necesario)
         # Mostrar la nota con texto más pequeño
         st.markdown("<p style='font-size: small; text-align: center;'>Un producto de Management Consultants de Guatemala</p>", unsafe_allow_html=True)
     except FileNotFoundError:
@@ -69,29 +69,19 @@ try:
     df_processed = process_movements(df_inventario, df_movimientos, df_caracteristicas, INITIAL_BALANCE_DATE)
     st.success("Datos procesados y saldos calculados.")
 
-    # --- Selección de Ítem ---
-    items_unicos_procesados = df_processed['Item'].unique()
-    search_query = st.text_input(
-        "Escribe el Ítem que quieres buscar:",
-        help="Ej: A123. Presiona Enter después de escribir."
-    ).strip()
+    # --- Selección de Ítem (ahora un Drop-Down) ---
+    items_unicos_procesados = sorted(df_processed['Item'].unique()) # Ordenar los ítems para el selectbox
+    
+    # Usar st.selectbox para permitir la selección de un ítem de una lista desplegable
+    selected_item = st.selectbox(
+        "Selecciona el Ítem que quieres analizar:",
+        options=[''] + list(items_unicos_procesados), # Añadir una opción vacía al inicio
+        index=0, # Seleccionar la opción vacía por defecto
+        help="Selecciona un ítem de la lista para ver sus movimientos."
+    )
 
-    selected_item = None
-    if search_query:
-        matching_items = [
-            item for item in items_unicos_procesados
-            if str(item).lower() == search_query.lower()
-        ]
-
-        if matching_items:
-            selected_item = matching_items[0]
-            if len(matching_items) > 1:
-                st.warning(f"Se encontraron múltiples ítems que coinciden exactamente con '{search_query}'. Mostrando el primero: {selected_item}")
-        else:
-            st.warning(f"El Ítem '{search_query}' no se encontró. Por favor, verifica el nombre o intenta con otro.")
-            # Si no se encuentra, df_filtered no se define en este bloque, se manejará abajo.
-
-    if selected_item:
+    # La lógica para mostrar los detalles del ítem ahora se basa directamente en `selected_item`
+    if selected_item: # Solo proceder si un ítem ha sido seleccionado (no la opción vacía)
         df_filtered = df_processed[df_processed['Item'] == selected_item].copy()
         df_display = df_filtered[df_filtered['Fecha'] >= START_PLOT_DATE].copy()
 
@@ -122,8 +112,8 @@ try:
             if not df_filtered.empty and df_filtered['Fecha'].min() < START_PLOT_DATE:
                 st.info(f"El último saldo disponible antes del {START_PLOT_DATE.strftime('%d-%m-%Y')} (fecha: {df_filtered['Fecha'].max().strftime('%Y-%m-%d')}) para este ítem es: {df_filtered['Saldo'].iloc[-1]}.")
 
-    else:
-        st.info("Por favor, escribe el nombre de un Ítem en el campo de texto para ver sus movimientos.")
+    else: # Si no se ha seleccionado ningún ítem (o se seleccionó la opción vacía)
+        st.info("Por favor, selecciona un Ítem del menú desplegable para ver sus movimientos.")
 
 except FileNotFoundError as e:
     st.error(f"Error: Uno de los archivos Excel no se encontró. {e}")
