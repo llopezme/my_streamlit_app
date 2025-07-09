@@ -3,5 +3,5 @@ pandas>=1.0.0
 openpyxl>=3.0.0
 plotly==5.20.0
 numpy>=1.0.0
-Pillow
+pillow>=9.0.0
 
