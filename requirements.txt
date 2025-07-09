@@ -4,4 +4,3 @@ openpyxl>=3.0.0
 plotly==5.20.0
 numpy>=1.0.0
 pillow>=9.0.0
-
