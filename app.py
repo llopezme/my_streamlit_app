@@ -78,7 +78,15 @@ try:
     df_processed = process_movements(df_inventario, df_movimientos, df_caracteristicas, INITIAL_BALANCE_DATE)
     st.success("Datos procesados y saldos calculados.")
 
+    # --- NUEVO DEBUG: Mostrar columnas de df_processed después de process_movements ---
+    st.write("--- DEBUG: df_processed después de process_movements ---")
+    st.write("Columnas de df_processed:", df_processed.columns.tolist())
+    st.write("df_processed está vacío:", df_processed.empty)
+    st.write("--------------------------------------------------")
+    # --- FIN NUEVO DEBUG ---
+
     # --- Selección de Ítem (ahora un Drop-Down) ---
+    # Esta es la línea donde sospechamos que ocurre el error si 'Item' no está en df_processed
     items_unicos_procesados = sorted(df_processed['Item'].unique()) # Ordenar los ítems para el selectbox
     
     # Usar st.selectbox para permitir la selección de un ítem de una lista desplegable
