@@ -2,4 +2,4 @@
 numpy
 pandas
 matplotlib
-openpyxl # Necesario para leer archivos .xlsx
+openpyxl>=3.0.0

@@ -1,23 +1,33 @@
-# my_streamlit_app/app.py
 import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
 
 # Importar funciones de tus módulos
-# Asegúrate de que estos archivos .py existan en la carpeta 'modules'
 from modules.data_loader import load_inventory_data, load_consumption_data, load_characteristics_data
 from modules.inventory_logic import process_movements
 from modules.outlier_detection import calculate_outliers_and_mean_without_outliers, display_outliers_table
 from modules.utils import display_item_characteristics, display_movement_charts, display_movement_details
 
+# --- Configuración de rutas de archivos (RELATIVAS) ---
+BASE_PATH = os.path.dirname(__file__)  # Ruta del directorio actual (donde está app.py)
+DATA_FOLDER = os.path.join(BASE_PATH, "data")  # Carpeta 'data' dentro del proyecto
 
-# --- Configuración de rutas de archivos ---
-# La ruta base donde se encuentran tus Excel
-BASE_PATH = "/Users/lionellopez/my_streamlit_app/data" # NOTA: Se añadió '/data' aquí
+# Nombres de archivos
 CONSUMOS_FILE_NAME = "consumos.xlsx"
 INVENTARIO_FILE_NAME = "inventario.xlsx"
 CARACTERISTICAS_FILE_NAME = "caracteristicas.xlsx"
+
+# Rutas completas a los archivos (válidas en cualquier entorno)
+CONSUMOS_PATH = os.path.join(DATA_FOLDER, CONSUMOS_FILE_NAME)
+INVENTARIO_PATH = os.path.join(DATA_FOLDER, INVENTARIO_FILE_NAME)
+CARACTERISTICAS_PATH = os.path.join(DATA_FOLDER, CARACTERISTICAS_FILE_NAME)
+
+# Verifica que los archivos existan (para debug)
+st.write("Rutas de archivos:")
+st.write(f"Consumos: {CONSUMOS_PATH}")
+st.write(f"Inventario: {INVENTARIO_PATH}")
+st.write(f"Características: {CARACTERISTICAS_PATH}")
 
 # Fechas clave para la simulación y visualización
 INITIAL_BALANCE_DATE = datetime(2022, 12, 31)
@@ -35,11 +45,11 @@ para cada ítem, con un saldo inicial y mostrando los datos a partir del **01 de
 try:
     # --- Carga de datos ---
     st.subheader("Cargando datos...")
-    df_inventario = load_inventory_data(os.path.join(BASE_PATH, INVENTARIO_FILE_NAME))
-    df_caracteristicas = load_characteristics_data(os.path.join(BASE_PATH, CARACTERISTICAS_FILE_NAME))
-    df_movimientos = load_consumption_data(os.path.join(BASE_PATH, CONSUMOS_FILE_NAME))
+    df_inventario = load_inventory_data(INVENTARIO_PATH)  # Pasa la ruta CORRECTA (DATA_FOLDER)
+    df_caracteristicas = load_characteristics_data(CARACTERISTICAS_PATH)
+    df_movimientos = load_consumption_data(CONSUMOS_PATH)
     st.success("Todos los archivos cargados exitosamente.")
-
+    
     # --- Procesamiento de movimientos ---
     st.subheader("Procesando movimientos y calculando saldo...")
     df_processed = process_movements(df_inventario, df_movimientos, df_caracteristicas, INITIAL_BALANCE_DATE)
