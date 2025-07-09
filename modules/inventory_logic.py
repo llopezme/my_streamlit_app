@@ -6,13 +6,19 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
     """
     Procesa los movimientos de inventario, calcula entradas/salidas y el saldo diario.
     Combina datos de inventario inicial, movimientos y características, asegurando que 'Site' se propague.
+    Incluye depuración exhaustiva para identificar el error 'Item'.
     """
     # --- DEBUG: Mostrar columnas y estado de DataFrames al inicio de la función ---
     print("\n--- DEBUG: Dentro de process_movements (Inicio de la función) ---")
-    print("Columnas de df_inventario al inicio:", df_inventario.columns.tolist())
-    print("df_inventario está vacío al inicio:", df_inventario.empty)
-    print("Columnas de df_movimientos al inicio:", df_movimientos.columns.tolist())
-    print("df_movimientos está vacío al inicio:", df_movimientos.empty)
+    print(f"DEBUG: initial_balance_date: {initial_balance_date}")
+    print("DEBUG: Columnas de df_inventario al inicio:", df_inventario.columns.tolist())
+    print("DEBUG: df_inventario está vacío al inicio:", df_inventario.empty)
+    if not df_inventario.empty:
+        print("DEBUG: Primeras 3 filas de df_inventario al inicio:\n", df_inventario.head(3))
+    print("DEBUG: Columnas de df_movimientos al inicio:", df_movimientos.columns.tolist())
+    print("DEBUG: df_movimientos está vacío al inicio:", df_movimientos.empty)
+    if not df_movimientos.empty:
+        print("DEBUG: Primeras 3 filas de df_movimientos al inicio:\n", df_movimientos.head(3))
     print("-------------------------------------------\n")
     # --- FIN DEBUG ---
 
@@ -25,32 +31,56 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
     # Ensure 'Item' columns are strings and handle potential NaNs before setting index or concatenating
     df_inventario['Item'] = df_inventario['Item'].astype(str).fillna('')
     df_movimientos['Item'] = df_movimientos['Item'].astype(str).fillna('')
+    print("DEBUG: Columnas 'Item' convertidas a string y NaNs rellenados con ''.")
     # --- END: Robustness checks for 'Item' column and DataFrame emptiness ---
 
     # 1. Calcular el saldo inicial para cada ítem (CurrentStock + StockSeguridad)
     # Asegurarse de que 'Site' esté en df_inventario antes de usarlo
     if 'Site' not in df_inventario.columns:
+        print("DEBUG: Columna 'Site' no encontrada en df_inventario. Añadiendo 'N/A_Inventario'.")
         df_inventario['Site'] = 'N/A_Inventario' 
 
     # Ensure 'CurrentStock' and 'StockSeguridad' are numeric before addition
     df_inventario['CurrentStock'] = pd.to_numeric(df_inventario['CurrentStock'], errors='coerce').fillna(0)
     df_inventario['StockSeguridad'] = pd.to_numeric(df_inventario['StockSeguridad'], errors='coerce').fillna(0)
+    print("DEBUG: 'CurrentStock' y 'StockSeguridad' convertidas a numérico.")
 
     df_inventario['InitialBalance'] = df_inventario['CurrentStock'] + df_inventario['StockSeguridad']
+    print("DEBUG: 'InitialBalance' calculado en df_inventario.")
     
     # Initialize maps, handling cases where df_inventario might be empty
     initial_balance_map = {}
     item_site_map = {}
+    
+    # --- DEBUG: Antes de crear los mapas ---
+    print(f"DEBUG: df_inventario antes de crear mapas: está vacío={df_inventario.empty}, columnas={df_inventario.columns.tolist()}")
     if not df_inventario.empty:
-        initial_balance_map = df_inventario.set_index('Item')['InitialBalance'].to_dict()
-        item_site_map = df_inventario.set_index('Item')['Site'].to_dict()
+        print(f"DEBUG: Primeras 3 filas de df_inventario antes de crear mapas:\n{df_inventario.head(3)}")
+    # --- FIN DEBUG ---
+
+    if not df_inventario.empty:
+        try:
+            initial_balance_map = df_inventario.set_index('Item')['InitialBalance'].to_dict()
+            item_site_map = df_inventario.set_index('Item')['Site'].to_dict()
+            print("DEBUG: Mapas initial_balance_map e item_site_map creados exitosamente.")
+        except KeyError as e:
+            print(f"ERROR DEBUG: KeyError al crear mapas: {e}. Esto podría indicar problemas con la columna 'Item' o 'Site' después de fillna.")
+            raise # Re-lanzar el error para que Streamlit lo capture
+    else:
+        print("DEBUG: df_inventario está vacío, los mapas están vacíos.")
+    
+    print(f"DEBUG: initial_balance_map keys (primeras 5): {list(initial_balance_map.keys())[:5]}...")
+    print(f"DEBUG: item_site_map keys (primeras 5): {list(item_site_map.keys())[:5]}...")
+
 
     # Asegurarse de que 'Fecha' sea tipo datetime en df_movimientos
     df_movimientos['Fecha'] = pd.to_datetime(df_movimientos['Fecha'])
+    print("DEBUG: Columna 'Fecha' en df_movimientos convertida a datetime.")
 
     # Calcular Entradas y Salidas en df_movimientos
     df_movimientos['Entradas'] = df_movimientos['Movimientos'].apply(lambda x: x if x > 0 else 0)
     df_movimientos['Salidas'] = df_movimientos['Movimientos'].apply(lambda x: x if x < 0 else 0)
+    print("DEBUG: Columnas 'Entradas' y 'Salidas' calculadas en df_movimientos.")
 
     df_processed_list = []
 
@@ -66,6 +96,9 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
     # Combine and get unique items, filtering out any empty strings that might have resulted from fillna('')
     all_items = [item for item in pd.Series(items_from_inventario + items_from_movimientos).unique() if item != '']
     print(f"DEBUG: all_items para procesar: {all_items}")
+    if not all_items:
+        print("DEBUG: La lista all_items está vacía después de la deduplicación y filtrado. Retornando DataFrame vacío.")
+        return pd.DataFrame(columns=['Item', 'Fecha', 'Movimientos', 'Entradas', 'Salidas', 'Site', 'Saldo'])
 
 
     for item in all_items:
@@ -79,6 +112,9 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
         default_site = item_site_map.get(item, 'N/A') 
         print(f"DEBUG: Saldo inicial para '{item}': {initial_bal}, Site por defecto: '{default_site}'")
 
+        # --- DEBUG: Antes de filtrar item_movements ---
+        print(f"DEBUG: df_movimientos antes de filtrar por '{item}': está vacío={df_movimientos.empty}, columnas={df_movimientos.columns.tolist()}")
+        # --- FIN DEBUG ---
         item_movements = df_movimientos[df_movimientos['Item'] == item].copy()
         print(f"DEBUG: Columnas de item_movements para '{item}': {item_movements.columns.tolist()}")
         print(f"DEBUG: item_movements para '{item}' está vacío: {item_movements.empty}")
@@ -95,6 +131,7 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
         print(f"DEBUG: Rango de fechas para '{item}': {start_date_for_item} a {end_date_for_item}")
 
         full_date_range = pd.date_range(start=start_date_for_item, end=end_date_for_item, freq='D')
+        print(f"DEBUG: full_date_range creado: {len(full_date_range)} días.")
         
         # Crear un DataFrame base con todas las fechas del rango para el ítem
         df_item_daily = pd.DataFrame({'Fecha': full_date_range, 'Item': item})
@@ -105,13 +142,25 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
             print(f"DEBUG: Columna 'Site' no encontrada en item_movements para '{item}'. Asignando default_site.")
             item_movements['Site'] = default_site 
 
+        # --- DEBUG: Antes de daily_movements_agg ---
+        print(f"DEBUG: item_movements antes de daily_movements_agg para '{item}': está vacío={item_movements.empty}, columnas={item_movements.columns.tolist()}")
+        if not item_movements.empty:
+            print(f"DEBUG: Primeras 3 filas de item_movements antes de daily_movements_agg:\n{item_movements.head(3)}")
+        # --- FIN DEBUG ---
         daily_movements_agg = item_movements.groupby(['Fecha', 'Site']).agg(
             Movimientos=('Movimientos', 'sum'),
             Entradas=('Entradas', 'sum'),
             Salidas=('Salidas', 'sum')
         ).reset_index()
         print(f"DEBUG: Columnas de daily_movements_agg para '{item}': {daily_movements_agg.columns.tolist()}")
+        if not daily_movements_agg.empty:
+            print(f"DEBUG: Primeras 3 filas de daily_movements_agg para '{item}':\n{daily_movements_agg.head(3)}")
 
+
+        # --- DEBUG: Antes del merge ---
+        print(f"DEBUG: df_item_daily antes del merge para '{item}': está vacío={df_item_daily.empty}, columnas={df_item_daily.columns.tolist()}")
+        print(f"DEBUG: daily_movements_agg antes del merge para '{item}': está vacío={daily_movements_agg.empty}, columnas={daily_movements_agg.columns.tolist()}")
+        # --- FIN DEBUG ---
         df_item_combined = pd.merge(
             df_item_daily,
             daily_movements_agg,
@@ -120,22 +169,42 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
         )
         print(f"DEBUG: Columnas de df_item_combined después del merge para '{item}': {df_item_combined.columns.tolist()}")
         print(f"DEBUG: df_item_combined para '{item}' está vacío: {df_item_combined.empty}")
+        if not df_item_combined.empty:
+            print(f"DEBUG: Primeras 3 filas de df_item_combined después del merge:\n{df_item_combined.head(3)}")
+
 
         df_item_combined[['Movimientos', 'Entradas', 'Salidas']] = df_item_combined[['Movimientos', 'Entradas', 'Salidas']].fillna(0)
         df_item_combined['Site'] = df_item_combined['Site'].fillna(default_site)
         print(f"DEBUG: Columnas de df_item_combined después de fillna para '{item}': {df_item_combined.columns.tolist()}")
+        if not df_item_combined.empty:
+            print(f"DEBUG: Primeras 3 filas de df_item_combined después de fillna:\n{df_item_combined.head(3)}")
+
 
         df_item_combined = df_item_combined.sort_values(by='Fecha').reset_index(drop=True)
+        print(f"DEBUG: df_item_combined ordenado y reseteado índice para '{item}'.")
 
         # Calcular Saldo
+        # --- DEBUG: Antes de calcular Saldo ---
+        print(f"DEBUG: df_item_combined antes de calcular Saldo para '{item}': está vacío={df_item_combined.empty}, columnas={df_item_combined.columns.tolist()}")
+        if not df_item_combined.empty:
+            print(f"DEBUG: Primeras 3 filas de df_item_combined antes de calcular Saldo:\n{df_item_combined.head(3)}")
+        # --- FIN DEBUG ---
+
+        # Asegurarse de que 'Saldo' exista antes de intentar establecer valores
+        if 'Saldo' not in df_item_combined.columns:
+            df_item_combined['Saldo'] = 0.0 # Inicializar si no existe
+
         df_item_combined.loc[df_item_combined['Fecha'] == initial_balance_date, 'Saldo'] = initial_bal
+        print(f"DEBUG: Saldo inicial '{initial_bal}' establecido para '{item}' en {initial_balance_date}.")
         
         df_item_combined['DailyTotalMovimientosForSaldo'] = df_item_combined.groupby('Fecha')['Movimientos'].transform('sum')
+        print(f"DEBUG: 'DailyTotalMovimientosForSaldo' calculado para '{item}'.")
 
         temp_saldo = pd.Series(index=df_item_combined.index, dtype=float)
         
         initial_idx = df_item_combined[df_item_combined['Fecha'] == initial_balance_date].index
         if not initial_idx.empty:
+            print(f"DEBUG: initial_idx para '{item}': {initial_idx[0]}")
             temp_saldo.loc[initial_idx[0]] = initial_bal
             for i in range(initial_idx[0] + 1, len(df_item_combined)):
                 temp_saldo.loc[i] = temp_saldo.loc[i-1] + df_item_combined.loc[i, 'DailyTotalMovimientosForSaldo']
@@ -143,23 +212,34 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
                 temp_saldo.loc[i] = temp_saldo.loc[i+1] - df_item_combined.loc[i+1, 'DailyTotalMovimientosForSaldo']
 
             df_item_combined['Saldo'] = temp_saldo
+            print(f"DEBUG: Saldo acumulativo calculado para '{item}'.")
         else:
+            print(f"DEBUG: initial_balance_date no encontrada en df_item_combined para '{item}'. Usando cumsum como fallback.")
             df_item_combined['Saldo'] = initial_bal + df_item_combined['DailyTotalMovimientosForSaldo'].cumsum()
 
         df_item_combined.drop(columns=['DailyTotalMovimientosForSaldo'], inplace=True)
+        print(f"DEBUG: Columna 'DailyTotalMovimientosForSaldo' eliminada para '{item}'.")
 
         df_processed_list.append(df_item_combined)
-        print(f"DEBUG: Ítem '{item}' procesado y añadido a la lista.")
+        print(f"DEBUG: Ítem '{item}' procesado y añadido a la lista. Filas en df_item_combined: {len(df_item_combined)}")
+        if not df_item_combined.empty:
+            print(f"DEBUG: Últimas 3 filas de df_item_combined para '{item}':\n{df_item_combined.tail(3)}")
+
 
     if df_processed_list:
+        print(f"DEBUG: Concatenando {len(df_processed_list)} DataFrames en df_processed final.")
         df_processed = pd.concat(df_processed_list, ignore_index=True)
         print(f"DEBUG: Columnas de df_processed final antes de return: {df_processed.columns.tolist()}")
+        print(f"DEBUG: df_processed final está vacío: {df_processed.empty}")
+        if not df_processed.empty:
+            print(f"DEBUG: Primeras 3 filas de df_processed final:\n{df_processed.head(3)}")
     else:
         df_processed = pd.DataFrame(columns=['Item', 'Fecha', 'Movimientos', 'Entradas', 'Salidas', 'Site', 'Saldo'])
         print("DEBUG: df_processed_list estaba vacío. Retornando DataFrame vacío con columnas predefinidas.")
 
     if 'Site' in df_processed.columns:
         df_processed['Site'] = df_processed['Site'].astype(str)
+        print("DEBUG: Columna 'Site' en df_processed final asegurada como string.")
     else:
         df_processed['Site'] = 'N/A' 
         print("DEBUG: La columna 'Site' no estaba en df_processed, se añadió como 'N/A'.")
