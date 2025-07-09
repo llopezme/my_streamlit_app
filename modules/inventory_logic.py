@@ -15,11 +15,13 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
     st.info(f"DEBUG: Columnas de df_inventario al inicio: {df_inventario.columns.tolist()}")
     st.info(f"DEBUG: df_inventario está vacío al inicio: {df_inventario.empty}")
     if not df_inventario.empty:
-        st.dataframe(df_inventario.head(3), caption="DEBUG: Primeras 3 filas de df_inventario al inicio")
+        st.write("DEBUG: Primeras 3 filas de df_inventario al inicio:")
+        st.dataframe(df_inventario.head(3))
     st.info(f"DEBUG: Columnas de df_movimientos al inicio: {df_movimientos.columns.tolist()}")
     st.info(f"DEBUG: df_movimientos está vacío al inicio: {df_movimientos.empty}")
     if not df_movimientos.empty:
-        st.dataframe(df_movimientos.head(3), caption="DEBUG: Primeras 3 filas de df_movimientos al inicio")
+        st.write("DEBUG: Primeras 3 filas de df_movimientos al inicio:")
+        st.dataframe(df_movimientos.head(3))
     # --- FIN DEBUG ---
 
     # --- START: Robustness checks for 'Item' column and DataFrame emptiness ---
@@ -59,7 +61,8 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
     # --- DEBUG: Antes de crear los mapas ---
     st.info(f"DEBUG: df_inventario antes de crear mapas: está vacío={df_inventario.empty}, columnas={df_inventario.columns.tolist()}")
     if not df_inventario.empty:
-        st.dataframe(df_inventario.head(3), caption="DEBUG: Primeras 3 filas de df_inventario antes de crear mapas")
+        st.write("DEBUG: Primeras 3 filas de df_inventario antes de crear mapas:")
+        st.dataframe(df_inventario.head(3))
     # --- FIN DEBUG ---
 
     if not df_inventario.empty:
@@ -67,7 +70,8 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
         duplicate_items = df_inventario[df_inventario.duplicated(subset=['Item'], keep=False)]
         if not duplicate_items.empty:
             st.error("ERROR CRÍTICO: Se encontraron ítems duplicados en el archivo de inventario ('inventario.xlsx') en la columna 'Item'.")
-            st.dataframe(duplicate_items, caption="Ítems duplicados en inventario:")
+            st.write("Ítems duplicados en inventario:")
+            st.dataframe(duplicate_items)
             raise ValueError("Ítems duplicados encontrados en df_inventario. No se puede crear un índice único.")
 
         try:
@@ -145,7 +149,8 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
         st.info(f"DEBUG: Columnas de item_movements para '{item}': {item_movements.columns.tolist()}")
         st.info(f"DEBUG: item_movements para '{item}' está vacío: {item_movements.empty}")
         if not item_movements.empty:
-            st.dataframe(item_movements.head(3), caption=f"DEBUG: Primeras 3 filas de item_movements para '{item}'")
+            st.write(f"DEBUG: Primeras 3 filas de item_movements para '{item}':")
+            st.dataframe(item_movements.head(3))
 
 
         # Determinar el rango de fechas para este ítem
@@ -171,7 +176,8 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
         # --- DEBUG: Antes de daily_movements_agg ---
         st.info(f"DEBUG: item_movements antes de daily_movements_agg para '{item}': está vacío={item_movements.empty}, columnas={item_movements.columns.tolist()}")
         if not item_movements.empty:
-            st.dataframe(item_movements.head(3), caption=f"DEBUG: Primeras 3 filas de item_movements antes de daily_movements_agg")
+            st.write(f"DEBUG: Primeras 3 filas de item_movements antes de daily_movements_agg:")
+            st.dataframe(item_movements.head(3))
         # --- FIN DEBUG ---
         try:
             daily_movements_agg = item_movements.groupby(['Fecha', 'Site']).agg(
@@ -186,7 +192,8 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
 
         st.info(f"DEBUG: Columnas de daily_movements_agg para '{item}': {daily_movements_agg.columns.tolist()}")
         if not daily_movements_agg.empty:
-            st.dataframe(daily_movements_agg.head(3), caption=f"DEBUG: Primeras 3 filas de daily_movements_agg para '{item}'")
+            st.write(f"DEBUG: Primeras 3 filas de daily_movements_agg para '{item}':")
+            st.dataframe(daily_movements_agg.head(3))
 
 
         # --- DEBUG: Antes del merge ---
@@ -208,14 +215,16 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
         st.info(f"DEBUG: Columnas de df_item_combined después del merge para '{item}': {df_item_combined.columns.tolist()}")
         st.info(f"DEBUG: df_item_combined para '{item}' está vacío: {df_item_combined.empty}")
         if not df_item_combined.empty:
-            st.dataframe(df_item_combined.head(3), caption=f"DEBUG: Primeras 3 filas de df_item_combined después del merge")
+            st.write(f"DEBUG: Primeras 3 filas de df_item_combined después del merge:")
+            st.dataframe(df_item_combined.head(3))
 
 
         df_item_combined[['Movimientos', 'Entradas', 'Salidas']] = df_item_combined[['Movimientos', 'Entradas', 'Salidas']].fillna(0)
         df_item_combined['Site'] = df_item_combined['Site'].fillna(default_site)
         st.info(f"DEBUG: Columnas de df_item_combined después de fillna para '{item}': {df_item_combined.columns.tolist()}")
         if not df_item_combined.empty:
-            st.dataframe(df_item_combined.head(3), caption=f"DEBUG: Primeras 3 filas de df_item_combined después de fillna")
+            st.write(f"DEBUG: Primeras 3 filas de df_item_combined después de fillna:")
+            st.dataframe(df_item_combined.head(3))
 
 
         df_item_combined = df_item_combined.sort_values(by='Fecha').reset_index(drop=True)
@@ -225,7 +234,8 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
         # --- DEBUG: Antes de calcular Saldo ---
         st.info(f"DEBUG: df_item_combined antes de calcular Saldo para '{item}': está vacío={df_item_combined.empty}, columnas={df_item_combined.columns.tolist()}")
         if not df_item_combined.empty:
-            st.dataframe(df_item_combined.head(3), caption=f"DEBUG: Primeras 3 filas de df_item_combined antes de calcular Saldo")
+            st.write(f"DEBUG: Primeras 3 filas de df_item_combined antes de calcular Saldo:")
+            st.dataframe(df_item_combined.head(3))
         # --- FIN DEBUG ---
 
         # Asegurarse de que 'Saldo' exista antes de intentar establecer valores
@@ -269,7 +279,8 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
         df_processed_list.append(df_item_combined)
         st.info(f"DEBUG: Ítem '{item}' procesado y añadido a la lista. Filas en df_item_combined: {len(df_item_combined)}")
         if not df_item_combined.empty:
-            st.dataframe(df_item_combined.tail(3), caption=f"DEBUG: Últimas 3 filas de df_item_combined para '{item}'")
+            st.write(f"DEBUG: Últimas 3 filas de df_item_combined para '{item}':")
+            st.dataframe(df_item_combined.tail(3))
 
 
     if df_processed_list:
@@ -278,7 +289,8 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
         st.info(f"DEBUG: Columnas de df_processed final antes de return: {df_processed.columns.tolist()}")
         st.info(f"DEBUG: df_processed final está vacío: {df_processed.empty}")
         if not df_processed.empty:
-            st.dataframe(df_processed.head(3), caption=f"DEBUG: Primeras 3 filas de df_processed final")
+            st.write(f"DEBUG: Primeras 3 filas de df_processed final:")
+            st.dataframe(df_processed.head(3))
     else:
         df_processed = pd.DataFrame(columns=['Item', 'Fecha', 'Movimientos', 'Entradas', 'Salidas', 'Site', 'Saldo'])
         st.warning("ADVERTENCIA: df_processed_list estaba vacío. Retornando DataFrame vacío con columnas predefinidas.")
