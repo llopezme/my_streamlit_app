@@ -42,7 +42,7 @@ with st.sidebar:
         # Cargar la imagen del logo
         logo = Image.open(LOGO_PATH)
         # Mostrar el logo en la barra lateral, ajustando el ancho para que sea más grande
-        st.image(logo, width=200) # Se ha aumentado el ancho a 200 (puedes ajustarlo más si es necesario)
+        st.image(logo, width=400) # Se ha aumentado el ancho a 200 (puedes ajustarlo más si es necesario)
         # Mostrar la nota con texto más pequeño
         st.markdown("<p style='font-size: small; text-align: center;'>Un producto de Management Consultants de Guatemala</p>", unsafe_allow_html=True)
     except FileNotFoundError:
