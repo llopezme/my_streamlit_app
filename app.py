@@ -43,16 +43,19 @@ START_PLOT_DATE = datetime(2023, 1, 1)
 # Configuración de la página de Streamlit
 st.set_page_config(page_title="Análisis de Movimientos de Inventario", layout="wide")
 
-# --- Mostrar el Logo ---
-try:
-    # Cargar la imagen del logo
-    logo = Image.open(LOGO_PATH)
-    # Mostrar el logo en la parte superior de la aplicación
-    st.image(logo, width=150) # Puedes ajustar el ancho según necesites
-except FileNotFoundError:
-    st.warning(f"Advertencia: El archivo del logo no se encontró en la ruta: {LOGO_PATH}")
-except Exception as e:
-    st.error(f"Error al cargar el logo: {e}")
+# --- Mostrar el Logo y la nota en la barra lateral ---
+with st.sidebar:
+    try:
+        # Cargar la imagen del logo
+        logo = Image.open(LOGO_PATH)
+        # Mostrar el logo en la barra lateral
+        st.image(logo, width=150) # Puedes ajustar el ancho según necesites
+        # Mostrar la nota con texto más pequeño
+        st.markdown("<p style='font-size: small; text-align: center;'>Un producto de Management Consultants de Guatemala</p>", unsafe_allow_html=True)
+    except FileNotFoundError:
+        st.warning(f"Advertencia: El archivo del logo no se encontró en la ruta: {LOGO_PATH}")
+    except Exception as e:
+        st.error(f"Error al cargar el logo: {e}")
 
 st.title("Análisis de Entradas y Salidas de Inventario por Ítem")
 st.write("""
