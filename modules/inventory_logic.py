@@ -29,9 +29,11 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
         raise ValueError("La columna 'Item' no se encontró en el DataFrame de movimientos (df_movimientos). Por favor, verifica el archivo 'consumos.xlsx'.")
     
     # Ensure 'Item' columns are strings and handle potential NaNs before setting index or concatenating
+    print("DEBUG: Convirtiendo columnas 'Item' a string y rellenando NaNs con ''.")
     df_inventario['Item'] = df_inventario['Item'].astype(str).fillna('')
     df_movimientos['Item'] = df_movimientos['Item'].astype(str).fillna('')
-    print("DEBUG: Columnas 'Item' convertidas a string y NaNs rellenados con ''.")
+    print(f"DEBUG: df_inventario['Item'] unique values (after fillna): {df_inventario['Item'].unique().tolist()[:5]}...")
+    print(f"DEBUG: df_movimientos['Item'] unique values (after fillna): {df_movimientos['Item'].unique().tolist()[:5]}...")
     # --- END: Robustness checks for 'Item' column and DataFrame emptiness ---
 
     # 1. Calcular el saldo inicial para cada ítem (CurrentStock + StockSeguridad)
@@ -60,12 +62,22 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
 
     if not df_inventario.empty:
         try:
+            # --- DEBUG: Antes de set_index para initial_balance_map ---
+            print(f"DEBUG: Intentando set_index('Item') para initial_balance_map. df_inventario['Item'] dtypes: {df_inventario['Item'].dtype}")
+            # --- FIN DEBUG ---
             initial_balance_map = df_inventario.set_index('Item')['InitialBalance'].to_dict()
+            
+            # --- DEBUG: Antes de set_index para item_site_map ---
+            print(f"DEBUG: Intentando set_index('Item') para item_site_map. df_inventario['Item'] dtypes: {df_inventario['Item'].dtype}")
+            # --- FIN DEBUG ---
             item_site_map = df_inventario.set_index('Item')['Site'].to_dict()
             print("DEBUG: Mapas initial_balance_map e item_site_map creados exitosamente.")
         except KeyError as e:
-            print(f"ERROR DEBUG: KeyError al crear mapas: {e}. Esto podría indicar problemas con la columna 'Item' o 'Site' después de fillna.")
+            print(f"ERROR DEBUG: KeyError al crear mapas: {e}. Esto podría indicar problemas con la columna 'Item' o 'Site' después de fillna, o si el índice resultante no es único.")
             raise # Re-lanzar el error para que Streamlit lo capture
+        except Exception as e:
+            print(f"ERROR DEBUG: Ocurrió un error inesperado al crear mapas: {e}. Tipo de error: {type(e).__name__}")
+            raise
     else:
         print("DEBUG: df_inventario está vacío, los mapas están vacíos.")
     
@@ -115,7 +127,16 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
         # --- DEBUG: Antes de filtrar item_movements ---
         print(f"DEBUG: df_movimientos antes de filtrar por '{item}': está vacío={df_movimientos.empty}, columnas={df_movimientos.columns.tolist()}")
         # --- FIN DEBUG ---
-        item_movements = df_movimientos[df_movimientos['Item'] == item].copy()
+        try:
+            item_movements = df_movimientos[df_movimientos['Item'] == item].copy()
+            print(f"DEBUG: item_movements filtrado para '{item}'.")
+        except KeyError as e:
+            print(f"ERROR DEBUG: KeyError al filtrar item_movements por 'Item': {e}.")
+            raise
+        except Exception as e:
+            print(f"ERROR DEBUG: Ocurrió un error inesperado al filtrar item_movements: {e}. Tipo de error: {type(e).__name__}")
+            raise
+
         print(f"DEBUG: Columnas de item_movements para '{item}': {item_movements.columns.tolist()}")
         print(f"DEBUG: item_movements para '{item}' está vacío: {item_movements.empty}")
         if not item_movements.empty:
@@ -147,11 +168,17 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
         if not item_movements.empty:
             print(f"DEBUG: Primeras 3 filas de item_movements antes de daily_movements_agg:\n{item_movements.head(3)}")
         # --- FIN DEBUG ---
-        daily_movements_agg = item_movements.groupby(['Fecha', 'Site']).agg(
-            Movimientos=('Movimientos', 'sum'),
-            Entradas=('Entradas', 'sum'),
-            Salidas=('Salidas', 'sum')
-        ).reset_index()
+        try:
+            daily_movements_agg = item_movements.groupby(['Fecha', 'Site']).agg(
+                Movimientos=('Movimientos', 'sum'),
+                Entradas=('Entradas', 'sum'),
+                Salidas=('Salidas', 'sum')
+            ).reset_index()
+            print(f"DEBUG: daily_movements_agg creado para '{item}'.")
+        except Exception as e:
+            print(f"ERROR DEBUG: Ocurrió un error inesperado al agrupar daily_movements_agg: {e}. Tipo de error: {type(e).__name__}")
+            raise
+
         print(f"DEBUG: Columnas de daily_movements_agg para '{item}': {daily_movements_agg.columns.tolist()}")
         if not daily_movements_agg.empty:
             print(f"DEBUG: Primeras 3 filas de daily_movements_agg para '{item}':\n{daily_movements_agg.head(3)}")
@@ -161,12 +188,18 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
         print(f"DEBUG: df_item_daily antes del merge para '{item}': está vacío={df_item_daily.empty}, columnas={df_item_daily.columns.tolist()}")
         print(f"DEBUG: daily_movements_agg antes del merge para '{item}': está vacío={daily_movements_agg.empty}, columnas={daily_movements_agg.columns.tolist()}")
         # --- FIN DEBUG ---
-        df_item_combined = pd.merge(
-            df_item_daily,
-            daily_movements_agg,
-            on=['Fecha', 'Item'], 
-            how='left'
-        )
+        try:
+            df_item_combined = pd.merge(
+                df_item_daily,
+                daily_movements_agg,
+                on=['Fecha', 'Item'], 
+                how='left'
+            )
+            print(f"DEBUG: df_item_combined creado después del merge para '{item}'.")
+        except Exception as e:
+            print(f"ERROR DEBUG: Ocurrió un error inesperado al hacer merge en df_item_combined: {e}. Tipo de error: {type(e).__name__}")
+            raise
+
         print(f"DEBUG: Columnas de df_item_combined después del merge para '{item}': {df_item_combined.columns.tolist()}")
         print(f"DEBUG: df_item_combined para '{item}' está vacío: {df_item_combined.empty}")
         if not df_item_combined.empty:
@@ -193,12 +226,20 @@ def process_movements(df_inventario: pd.DataFrame, df_movimientos: pd.DataFrame,
         # Asegurarse de que 'Saldo' exista antes de intentar establecer valores
         if 'Saldo' not in df_item_combined.columns:
             df_item_combined['Saldo'] = 0.0 # Inicializar si no existe
+            print("DEBUG: Columna 'Saldo' inicializada en df_item_combined.")
 
         df_item_combined.loc[df_item_combined['Fecha'] == initial_balance_date, 'Saldo'] = initial_bal
         print(f"DEBUG: Saldo inicial '{initial_bal}' establecido para '{item}' en {initial_balance_date}.")
         
-        df_item_combined['DailyTotalMovimientosForSaldo'] = df_item_combined.groupby('Fecha')['Movimientos'].transform('sum')
-        print(f"DEBUG: 'DailyTotalMovimientosForSaldo' calculado para '{item}'.")
+        # --- DEBUG: Antes de DailyTotalMovimientosForSaldo ---
+        print(f"DEBUG: df_item_combined antes de DailyTotalMovimientosForSaldo para '{item}': está vacío={df_item_combined.empty}, columnas={df_item_combined.columns.tolist()}")
+        # --- FIN DEBUG ---
+        try:
+            df_item_combined['DailyTotalMovimientosForSaldo'] = df_item_combined.groupby('Fecha')['Movimientos'].transform('sum')
+            print(f"DEBUG: 'DailyTotalMovimientosForSaldo' calculado para '{item}'.")
+        except Exception as e:
+            print(f"ERROR DEBUG: Ocurrió un error inesperado al calcular DailyTotalMovimientosForSaldo: {e}. Tipo de error: {type(e).__name__}")
+            raise
 
         temp_saldo = pd.Series(index=df_item_combined.index, dtype=float)
         
