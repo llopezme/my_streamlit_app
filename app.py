@@ -29,13 +29,6 @@ INVENTARIO_PATH = os.path.join(DATA_FOLDER, INVENTARIO_FILE_NAME)
 CARACTERISTICAS_PATH = os.path.join(DATA_FOLDER, CARACTERISTICAS_FILE_NAME)
 LOGO_PATH = os.path.join(ASSETS_FOLDER, LOGO_FILE_NAME)
 
-# Verifica que los archivos existan (para debug)
-st.write("Rutas de archivos:")
-st.write(f"Consumos: {CONSUMOS_PATH}")
-st.write(f"Inventario: {INVENTARIO_PATH}")
-st.write(f"Características: {CARACTERISTICAS_PATH}")
-st.write(f"Logo: {LOGO_PATH}") # Mostrar la ruta del logo
-
 # Fechas clave para la simulación y visualización
 INITIAL_BALANCE_DATE = datetime(2022, 12, 31)
 START_PLOT_DATE = datetime(2023, 1, 1)
@@ -48,8 +41,8 @@ with st.sidebar:
     try:
         # Cargar la imagen del logo
         logo = Image.open(LOGO_PATH)
-        # Mostrar el logo en la barra lateral
-        st.image(logo, width=150) # Puedes ajustar el ancho según necesites
+        # Mostrar el logo en la barra lateral, ajustando el ancho para que sea más grande
+        st.image(logo, width=200) # Se ha aumentado el ancho a 200 (puedes ajustarlo más si es necesario)
         # Mostrar la nota con texto más pequeño
         st.markdown("<p style='font-size: small; text-align: center;'>Un producto de Management Consultants de Guatemala</p>", unsafe_allow_html=True)
     except FileNotFoundError:
