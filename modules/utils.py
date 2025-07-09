@@ -18,10 +18,23 @@ def display_item_characteristics(selected_item: str, df_caracteristicas: pd.Data
 
     # Calculate the initial balance (CurrentStock + StockSeguridad) for display
     initial_balance_for_display = 0
-    if not item_inventario_row.empty:
+    if not item_inventario_row.empty and 'CurrentStock' in item_inventario_row.columns and 'StockSeguridad' in item_inventario_row.columns:
         initial_balance_for_display = item_inventario_row['CurrentStock'].iloc[0] + item_inventario_row['StockSeguridad'].iloc[0]
 
-    if not item_caracteristicas_row.empty and not item_inventario_row.empty:
+    if not item_caracteristicas_row.empty or not item_inventario_row.empty: # Changed 'and' to 'or' to display characteristics if available from either source
+        # Safely get values, providing 'N/A' if column is missing or row is empty
+        get_value = lambda df_row, col: str(df_row[col].iloc[0]) if not df_row.empty and col in df_row.columns else "N/A"
+
+        # Corrected: Get 'Site' from df_inventario as per user's clarification
+        site_val = get_value(item_inventario_row, 'Site') 
+        descripcion_val = get_value(item_caracteristicas_row, 'Descripcion')
+        adi_val = get_value(item_caracteristicas_row, 'ADI')
+        cv_val = get_value(item_caracteristicas_row, 'CV')
+        metodo_val = get_value(item_caracteristicas_row, 'Metodo')
+        abc_class_val = get_value(item_caracteristicas_row, 'ABC Class')
+        lead_time_val = get_value(item_inventario_row, 'LeadTime')
+        stock_seguridad_val = get_value(item_inventario_row, 'StockSeguridad')
+
         carac_data = {
             "Métrica": [
                 "Item", "Site", "Descripción", "ADI", "CV", "Método", "ABC Class",
@@ -31,22 +44,23 @@ def display_item_characteristics(selected_item: str, df_caracteristicas: pd.Data
             ],
             "Valor": [
                 selected_item,
-                item_caracteristicas_row['Site'].iloc[0],
-                item_caracteristicas_row['Descripcion'].iloc[0],
-                item_caracteristicas_row['ADI'].iloc[0],
-                item_caracteristicas_row['CV'].iloc[0],
-                item_caracteristicas_row['Metodo'].iloc[0],
-                item_caracteristicas_row['ABC Class'].iloc[0],
-                item_inventario_row['LeadTime'].iloc[0],
-                item_inventario_row['StockSeguridad'].iloc[0],
-                initial_balance_for_display, # Display the calculated initial balance
-                total_salidas_item,
+                site_val,
+                descripcion_val,
+                adi_val,
+                cv_val,
+                metodo_val,
+                abc_class_val,
+                lead_time_val,
+                stock_seguridad_val,
+                str(initial_balance_for_display), # Display the calculated initial balance
+                str(total_salidas_item),
                 f"{mean_without_outliers_abs:.2f}",
                 f"{upper_bound_outlier_abs:.2f}"
             ]
         }
         st.dataframe(pd.DataFrame(carac_data).set_index("Métrica"))
     else:
+        # Improved warning message to reflect checking both dataframes
         st.warning(f"No se encontró información completa de características para el Ítem: **{selected_item}** en los archivos 'caracteristicas.xlsx' o 'inventario.xlsx'.")
 
 
@@ -102,4 +116,3 @@ def display_movement_details(df_display: pd.DataFrame):
     st.subheader("Detalle de Movimientos:")
     # Include 'Saldo' in the displayed dataframe
     st.dataframe(df_display[['Fecha', 'Entradas', 'Salidas', 'Movimientos', 'Saldo', 'Site']].sort_values(by='Fecha').set_index('Fecha'))
-
