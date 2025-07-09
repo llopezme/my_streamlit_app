@@ -3,6 +3,17 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 
+def safe_get_value(df_row: pd.DataFrame, col: str):
+    """
+    Intenta obtener un valor de una columna de un DataFrame, devolviendo "N/A"
+    si el DataFrame está vacío, la columna no existe o el valor es nulo.
+    """
+    if not df_row.empty and col in df_row.columns:
+        # Asegurarse de que la serie de la columna no esté vacía antes de acceder a iloc[0]
+        if not df_row[col].empty and pd.notna(df_row[col].iloc[0]):
+            return str(df_row[col].iloc[0])
+    return "N/A"
+
 def display_item_characteristics(selected_item: str, df_caracteristicas: pd.DataFrame,
                                  df_inventario: pd.DataFrame, df_display: pd.DataFrame,
                                  mean_without_outliers_abs: float, upper_bound_outlier_abs: float):
@@ -11,6 +22,11 @@ def display_item_characteristics(selected_item: str, df_caracteristicas: pd.Data
     """
     st.subheader("Características del Ítem Seleccionado:")
     
+    # Verificar si la columna 'Site' existe en df_inventario al inicio
+    if 'Site' not in df_inventario.columns:
+        st.error("Error: La columna 'Site' no se encontró en el archivo de inventario. Por favor, verifica el nombre de la columna en 'inventario.xlsx' (sensibilidad a mayúsculas/minúsculas, espacios).")
+        return # Detener la ejecución de la función si la columna crítica falta
+
     item_caracteristicas_row = df_caracteristicas[df_caracteristicas['Item'] == selected_item]
     item_inventario_row = df_inventario[df_inventario['Item'] == selected_item]
 
@@ -21,19 +37,16 @@ def display_item_characteristics(selected_item: str, df_caracteristicas: pd.Data
     if not item_inventario_row.empty and 'CurrentStock' in item_inventario_row.columns and 'StockSeguridad' in item_inventario_row.columns:
         initial_balance_for_display = item_inventario_row['CurrentStock'].iloc[0] + item_inventario_row['StockSeguridad'].iloc[0]
 
-    if not item_caracteristicas_row.empty or not item_inventario_row.empty: # Changed 'and' to 'or' to display characteristics if available from either source
-        # Safely get values, providing 'N/A' if column is missing or row is empty
-        get_value = lambda df_row, col: str(df_row[col].iloc[0]) if not df_row.empty and col in df_row.columns else "N/A"
-
+    if not item_caracteristicas_row.empty or not item_inventario_row.empty:
         # Corrected: Get 'Site' from df_inventario as per user's clarification
-        site_val = get_value(item_inventario_row, 'Site') 
-        descripcion_val = get_value(item_caracteristicas_row, 'Descripcion')
-        adi_val = get_value(item_caracteristicas_row, 'ADI')
-        cv_val = get_value(item_caracteristicas_row, 'CV')
-        metodo_val = get_value(item_caracteristicas_row, 'Metodo')
-        abc_class_val = get_value(item_caracteristicas_row, 'ABC Class')
-        lead_time_val = get_value(item_inventario_row, 'LeadTime')
-        stock_seguridad_val = get_value(item_inventario_row, 'StockSeguridad')
+        site_val = safe_get_value(item_inventario_row, 'Site') 
+        descripcion_val = safe_get_value(item_caracteristicas_row, 'Descripcion')
+        adi_val = safe_get_value(item_caracteristicas_row, 'ADI')
+        cv_val = safe_get_value(item_caracteristicas_row, 'CV')
+        metodo_val = safe_get_value(item_caracteristicas_row, 'Metodo')
+        abc_class_val = safe_get_value(item_caracteristicas_row, 'ABC Class')
+        lead_time_val = safe_get_value(item_inventario_row, 'LeadTime')
+        stock_seguridad_val = safe_get_value(item_inventario_row, 'StockSeguridad')
 
         carac_data = {
             "Métrica": [
@@ -60,7 +73,6 @@ def display_item_characteristics(selected_item: str, df_caracteristicas: pd.Data
         }
         st.dataframe(pd.DataFrame(carac_data).set_index("Métrica"))
     else:
-        # Improved warning message to reflect checking both dataframes
         st.warning(f"No se encontró información completa de características para el Ítem: **{selected_item}** en los archivos 'caracteristicas.xlsx' o 'inventario.xlsx'.")
 
 
