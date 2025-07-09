@@ -42,7 +42,7 @@ with st.sidebar:
         # Cargar la imagen del logo
         logo = Image.open(LOGO_PATH)
         # Mostrar el logo en la barra lateral, ajustando el ancho para que sea más grande
-        st.image(logo, width=200) # Se ha aumentado el ancho a 200 (puedes ajustarlo más si es necesario)
+        st.image(logo, width=400) # Se ha aumentado el ancho a 200 (puedes ajustarlo más si es necesario)
         # Mostrar la nota con texto más pequeño
         st.markdown("<p style='font-size: small; text-align: center;'>Un producto de Management Consultants de Guatemala</p>", unsafe_allow_html=True)
     except FileNotFoundError:
@@ -50,7 +50,7 @@ with st.sidebar:
     except Exception as e:
         st.error(f"Error al cargar el logo: {e}")
 
-st.title("Análisis de Entradas y Salidas de Inventario por Ítem")
+st.title("Movimientos inventario")
 st.write("""
 Esta aplicación visualiza los movimientos de inventario (entradas y salidas)
 para cada ítem, con un saldo inicial y mostrando los datos a partir del **01 de enero de 2023**.
