@@ -50,7 +50,7 @@ with st.sidebar:
     except Exception as e:
         st.error(f"Error al cargar el logo: {e}")
 
-st.title("Movimientos inventario")
+st.title("Analisis Inventario Toluca")
 st.write("""
 Esta aplicación visualiza los movimientos de inventario (entradas y salidas)
 para cada ítem, con un saldo inicial y mostrando los datos a partir del **01 de enero de 2023**.
@@ -65,12 +65,12 @@ try:
     st.success("Todos los archivos cargados exitosamente.")
 
     # --- DEBUG: Mostrar columnas de DataFrames antes de process_movements ---
-    st.write("--- DEBUG: DataFrames antes de process_movements ---")
-    st.write("Columnas de df_inventario:", df_inventario.columns.tolist())
-    st.write("df_inventario está vacío:", df_inventario.empty)
-    st.write("Columnas de df_movimientos:", df_movimientos.columns.tolist())
-    st.write("df_movimientos está vacío:", df_movimientos.empty)
-    st.write("--------------------------------------------------")
+    # st.write("--- DEBUG: DataFrames antes de process_movements ---")
+    # st.write("Columnas de df_inventario:", df_inventario.columns.tolist())
+    # st.write("df_inventario está vacío:", df_inventario.empty)
+    # st.write("Columnas de df_movimientos:", df_movimientos.columns.tolist())
+    # st.write("df_movimientos está vacío:", df_movimientos.empty)
+    # st.write("--------------------------------------------------")
     # --- FIN DEBUG ---
     
     # --- Procesamiento de movimientos ---
@@ -79,10 +79,10 @@ try:
     st.success("Datos procesados y saldos calculados.")
 
     # --- NUEVO DEBUG: Mostrar columnas de df_processed después de process_movements ---
-    st.write("--- DEBUG: df_processed después de process_movements ---")
-    st.write("Columnas de df_processed:", df_processed.columns.tolist())
-    st.write("df_processed está vacío:", df_processed.empty)
-    st.write("--------------------------------------------------")
+    # st.write("--- DEBUG: df_processed después de process_movements ---")
+    # st.write("Columnas de df_processed:", df_processed.columns.tolist())
+    # st.write("df_processed está vacío:", df_processed.empty)
+    # st.write("--------------------------------------------------")
     # --- FIN NUEVO DEBUG ---
 
     # --- Selección de Ítem (ahora un Drop-Down) ---
